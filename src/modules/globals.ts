@@ -81,6 +81,7 @@ type TmpPokemonListData = {
 
 type TmpSaveType = {
     key: string;
+    addMissingSaves(): Promise<void> | void;
 };
 
 type TmpMapHelperType = {

@@ -7,7 +7,8 @@ import { SortSaves } from './Sortable';
 export default class SaveSelector {
     static MAX_SAVES = 9;
 
-    static loadSaves() {
+    static async loadSaves() {
+        await Save.addMissingSaves();
         const container = document.querySelector('#saveSelector .save-container');
 
         const saves = Object.keys(localStorage).filter((k: string) => k.startsWith('save'));

@@ -242,4 +242,63 @@ class Save {
             });
         }
     }
+
+    public static async ensureGoogleApiLoaded() {
+        if (gapi.client) {
+            return;
+        }
+
+        return new Promise(resolve => {
+            gapi.load('client', async () => {
+                await gapi.client.init({
+                    apiKey: 'AIzaSyAukg5ixyS2iF-zEM1wAvDpxlwKynvfCMI',
+                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                });
+                resolve();
+            });
+        });
+    }
+
+    public static async ensureGoogleOAuth() {
+        await this.ensureGoogleApiLoaded();
+        return new Promise((resolve) => {
+            const client = google.accounts.oauth2.initTokenClient({
+                client_id: '291805748728-vgebqqps8suf2frg0nl7g7eh05smqqem.apps.googleusercontent.com',
+                scope: 'https://www.googleapis.com/auth/drive.appdata',
+                callback: async (token) => {
+                    localStorage.setItem('google_oauth_token', JSON.stringify(token));
+                    resolve();
+                },
+            });
+
+            client.requestAccessToken();
+        });
+    }
+
+    public static async addMissingSaves() {
+        try {
+            await this.ensureGoogleOAuth();
+        } catch (e) {
+            console.error('Failed to login to google oauth:', e);
+        }
+
+        try {
+            const { result: { files } } = await gapi.client.drive.files.list({spaces: 'appDataFolder', fields: 'files(id, name)'});
+
+            if (files.length === 0) {
+                console.log('No cloud save files found');
+                return;
+            }
+
+            await Promise.all(files.map(async ({ id }) => {
+                console.log(await gapi.client.drive.files.get({ fileId: id }));
+            }));
+        } catch (e) {
+            console.error('Failed to add missing saves from google drive:', e);
+            Notifier.notify({
+                message: 'An error occurend while fetching cloud save files from Google Drive',
+                type: NotificationConstants.NotificationOption.danger,
+            });
+        }
+    }
 }

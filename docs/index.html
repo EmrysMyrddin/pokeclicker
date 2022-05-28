@@ -17,10 +17,10 @@
     <script src="libs/Sortable.min.js"></script>
 
     <!-- New module-based code from './modules' -->
-    <script src="scripts/modules.min.js?v=0.9.3"></script>
+    <script src="scripts/modules.min.js?v=0.9.4"></script>
 
     <!--Minified scripts-->
-    <script src="scripts/script.min.js?v=0.9.3"></script>
+    <script src="scripts/script.min.js?v=0.9.4"></script>
 
     <!--Popper.js-->
     <script src="libs/popper.min.js"></script>
@@ -32,36 +32,19 @@
     <!--Notify-->
     <script src="libs/bootstrap-notify.min.js"></script>
 
-    <!--Motio-->
-    <script src="libs/motio.js"></script>
-
     <!--Intro.js-->
     <script src="libs/intro.min.js"></script>
     <link href="libs/introjs.css" rel="stylesheet">
     <link href="libs/introjs-modern.css" rel="stylesheet">
 
     <!--Minified styles-->
-    <link href="styles/styles.min.css?v=0.9.3" rel="stylesheet">
+    <link href="styles/styles.min.css?v=0.9.4" rel="stylesheet">
+
+    <!--Google Drive API-->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <!-- Google Analytics-->
-        <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-171657234-1"></script>
-    <script>
-        if (true) {
-            window.dataLayer = window.dataLayer || [];
-
-            function gtag() {
-                dataLayer.push(arguments);
-            }
-
-            gtag('js', new Date());
-
-            gtag('config', 'UA-171657234-1');
-        } else {
-            function gtag(){};
-        }
-    </script>
-
     <style>
         #game.loading {
             display: none !important;
@@ -144,13 +127,14 @@
             </a>
         </div>
         <div class="save-container justify-content-center container row"></div>
-        
+
         <div class="new-import-buttons justify-content-center container row">
             <label class="btn btn-success col-md-4 col-xs-12 mx-1" onclick="Save.key = Rand.string(6); document.querySelector('#saveSelector').remove(); App.start();">New Save</label>
             <label for="import-save" class="btn btn-warning col-md-4 col-xs-12 mx-1" onclick="Save.key = Rand.string(6);">Import Save</label>
+            <label class="btn btn-warning col-md-4 col-xs-12 mx-1" onclick="Save.key = Rand.string(6); Save.addMissingSaves()">Import From Google Drive</label>
         </div>
     </div>
-    
+
     <div class="dropdown-menu py-0" id="saveSelectorContextMenu">
         <a class="dropdown-item" href="#">Action</a>
         <a class="dropdown-item" href="#">Another action</a>
@@ -189,6 +173,7 @@
         </div>
     </div>
 </template>
+
 
 <div class="loader background-night" id="loader">
     <br>
@@ -831,7 +816,9 @@
                     for="partySortDirection"
                     class="clickable m-0 pl-2 pr-2"
                     style="font-size: 22px;"
-                    data-bind="text: Settings.getSetting('partySortDirection').observableValue() ? '⥄' : '⥂'"
+                    data-bind="
+                        text: Settings.getSetting('partySortDirection').observableValue() ? '⥄' : '⥂',
+                        tooltip: { title: Settings.getSetting('partySortDirection').observableValue() ? 'Descending (highest value first)' : 'Ascending (lowest value first)', trigger: 'hover', placement:'top', html: true }"
                 >⥂</label>
                 <input
                     id="partySortDirection"
@@ -975,7 +962,8 @@
                                      App.game.gameState === GameConstants.GameState.town ||
                                      App.game.gameState === GameConstants.GameState.shop ||
                                      App.game.gameState === GameConstants.GameState.gym ||
-                                     App.game.gameState == GameConstants.GameState.battleFrontier)">
+                                     App.game.gameState === GameConstants.GameState.battleFrontier ||
+                                     App.game.gameState === GameConstants.GameState.temporaryBattle)">
                     <table width="100%">
                         <tr class="row">
                             <td class="col">
@@ -992,7 +980,7 @@
                             </td>
                             <td class="col">
                                 <span style="display: inline; position: relative;">
-                                    <img title="Quest points" src="assets/images/currency/questPoint.svg" height="25px">
+                                    <img title="Quest Points&#013;&#010;Gained by completing Quests" src="assets/images/currency/questPoint.svg" height="25px">
                                     <span id="animateCurrency-questPoint" data-bind="text: Settings.getSetting('currencyMainDisplayReduced').observableValue() ? GameConstants.formatNumber(App.game.wallet.currencies[GameConstants.Currency.questPoint]()) : App.game.wallet.currencies[GameConstants.Currency.questPoint]().toLocaleString('en-US')">0</span>
                                 </span>
                             </td>
@@ -1000,19 +988,19 @@
                         <tr class="row" data-bind="visible: Settings.getSetting('currencyMainDisplayExtended').observableValue()">
                             <td class="col">
                                 <span style="display: inline; position: relative;">
-                                    <img title="Quest points" src="assets/images/currency/farmPoint.svg" height="25px">
+                                    <img title="Farm Points&#013;&#010;Gained at the Farm" src="assets/images/currency/farmPoint.svg" height="25px">
                                     <span id="animateCurrency-farmPoint" data-bind="text: Settings.getSetting('currencyMainDisplayReduced').observableValue() ? GameConstants.formatNumber(App.game.wallet.currencies[GameConstants.Currency.farmPoint]()) : App.game.wallet.currencies[GameConstants.Currency.farmPoint]().toLocaleString('en-US')">0</span>
                                 </span>
                             </td>
                             <td class="col">
                                 <span style="display: inline; position: relative;">
-                                    <img title="Quest points" src="assets/images/currency/diamond.svg" height="25px">
+                                    <img title="Diamonds&#013;&#010;Gained in the Underground" src="assets/images/currency/diamond.svg" height="25px">
                                     <span id="animateCurrency-diamond" data-bind="text: Settings.getSetting('currencyMainDisplayReduced').observableValue() ? GameConstants.formatNumber(App.game.wallet.currencies[GameConstants.Currency.diamond]()) : App.game.wallet.currencies[GameConstants.Currency.diamond]().toLocaleString('en-US')">0</span>
                                 </span>
                             </td>
                             <td class="col">
                                 <span style="display: inline; position: relative;">
-                                    <img title="Quest points" src="assets/images/currency/battlePoint.svg" height="25px">
+                                    <img title="Battle Points&#013;&#010;Gained at the Battle Frontier" src="assets/images/currency/battlePoint.svg" height="25px">
                                     <span id="animateCurrency-battlePoint" data-bind="text: Settings.getSetting('currencyMainDisplayReduced').observableValue() ? GameConstants.formatNumber(App.game.wallet.currencies[GameConstants.Currency.battlePoint]()) : App.game.wallet.currencies[GameConstants.Currency.battlePoint]().toLocaleString('en-US')">0</span>
                                 </span>
                             </td>
@@ -1024,7 +1012,7 @@
                 <!--Use the base battle layout for fighting, dungeons and battle frontier.-->
 
                 <div class="battle-view card-body p-0 justify-content-center no-gutters no-select"
-                    data-bind="if: (App.game.gameState === GameConstants.GameState.fighting || App.game.gameState === GameConstants.GameState.dungeon || App.game.gameState === GameConstants.GameState.paused || App.game.gameState === GameConstants.GameState.town || App.game.gameState === GameConstants.GameState.gym || App.game.gameState == GameConstants.GameState.battleFrontier),
+                    data-bind="if: (App.game.gameState === GameConstants.GameState.fighting || App.game.gameState === GameConstants.GameState.dungeon || App.game.gameState === GameConstants.GameState.paused || App.game.gameState === GameConstants.GameState.town || App.game.gameState === GameConstants.GameState.gym || App.game.gameState == GameConstants.GameState.battleFrontier) || App.game.gameState == GameConstants.GameState.temporaryBattle,
                         class: MapHelper.calculateBattleCssClass()">
 
                     <!-- Route Battles -->
@@ -1268,6 +1256,62 @@
 </div>
 
 
+                    <!-- One Time Battles -->
+                    
+<div class="row justify-content-center no-gutters" data-bind="if: App.game.gameState === GameConstants.GameState.temporaryBattle">
+    <div class="col no-gutters clickable" data-bind="click: function() {TemporaryBattleBattle.clickAttack()}" style="height: 220px; display: block;">
+        <h2 class="pageItemTitle" style="display: block;">
+
+            <knockout class="left">
+                <knockout data-bind="text: TemporaryBattleBattle.battle.name"></knockout>
+            </knockout>
+
+            <knockout>
+                <knockout data-bind="text: TemporaryBattleBattle.enemyPokemon().name">Pokémon name</knockout>
+            </knockout>
+
+            <knockout class="right">
+                <span data-bind="foreach: new Array(TemporaryBattleBattle.pokemonsDefeatedComputable())">
+                    <img src="assets/images/pokeball/Pokeball.svg" class="pokeball-smallest pokeball-defeated"/>
+                </span>
+                <span data-bind="foreach: new Array(TemporaryBattleBattle.pokemonsUndefeatedComputable())">
+                    <img src="assets/images/pokeball/Pokeball.svg" class="pokeball-smallest"/>
+                </span>
+            </knockout>
+
+            <div class="progress timer">
+                <div class="progress-bar bg-danger" role="progressbar"
+                     data-bind="attr:{ style: 'width:' + TemporaryBattleRunner.timeLeftPercentage() + '%' },
+                     css: { 'bg-danger': TemporaryBattleRunner.timeLeftSeconds() < 10, 'bg-primary': TemporaryBattleRunner.timeLeftSeconds() >= 10 }"
+                     aria-valuemin="0" aria-valuemax="100">
+                     <span data-bind="text: TemporaryBattleRunner.timeLeftSeconds() + 's'" style="font-size: 12px;"></span>
+                </div>
+            </div>
+        </h2>
+
+        <div id="temporaryBattleGoContainer" data-bind="if: Settings.getSetting('showGymGoAnimation').observableValue">
+          <div class="row" style="display: inline-block; vertical-align: middle;">
+            <div class="col-sm-6 offset-sm-3">
+              <img style="width:100%" id="temporaryBattleGo" src="assets/gifs/go.gif">
+            </div>
+          </div>
+        </div>
+
+        <div>
+            <img class="enemy" data-bind="attr:{ src: PokemonHelper.getImage(TemporaryBattleBattle.enemyPokemon(), TemporaryBattleBattle.enemyPokemon().shiny) }" src=""/>
+        </div>
+
+        <div class="progress hitpoints" style="height: 20px;">
+            <div class="progress-bar bg-danger" role="progressbar"
+                    data-bind="attr:{ style: 'width:' + TemporaryBattleBattle.enemyPokemon().healthPercentage() + '%' }"
+                    aria-valuemin="0" aria-valuemax="100">
+                <span data-bind="text: TemporaryBattleBattle.enemyPokemon().health() + ' / ' + TemporaryBattleBattle.enemyPokemon().maxHealth()" style="font-size: 12px;"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+
                     <!-- Battle Frontier Battles -->
                     
 <div class="row justify-content-center no-gutters" data-bind="if: App.game.gameState == GameConstants.GameState.battleFrontier">
@@ -1275,7 +1319,7 @@
         <h2 class="pageItemTitle" style="display: block;">
 
             <knockout class="left">
-                Stage <knockout data-bind="text: BattleFrontierRunner.stage">0</knockout>
+                Stage <knockout data-bind="text: BattleFrontierRunner.stage">0</knockout> / <knockout data-bind="text: BattleFrontierRunner.highest">0</knockout>
             </knockout>
 
             <knockout>
@@ -1310,6 +1354,7 @@
         </div>
     </div>
 </div>
+
 
                     <!--TownView-->
                     <knockout data-bind="if: App.game.gameState === GameConstants.GameState.town">
@@ -1597,7 +1642,10 @@
                             visible: SubRegions.getSubRegions(player.region).filter(sr => sr.unlocked()).length > 1,
                             css: { 'slow-flash': player.highestRegion() == player.region && SubRegions.getSubRegions(player.region).filter(sr => sr.unlocked()).length > player.highestSubRegion() + 1 }">
                             <button class="btn btn-sm btn-secondary" data-bind="click: () => player.subregion = player.subregion - 1">&lt;</button>
-                            <button class="btn btn-sm btn-primary" style="width: 70%;" data-bind="click: () => SubRegions.openModal()">Subregional Travel</button>
+                            <button class="btn btn-sm btn-primary" style="width: 70%;" data-bind="
+                                click: () => SubRegions.openModal(),
+                                text: 'Subregional Travel (' + SubRegions.getSubRegionById(player.region, player.subregion)?.name + ')'"
+                                >Subregional Travel</button>
                             <button class="btn btn-sm btn-secondary" data-bind="click: () => player.subregion = player.subregion + 1">&gt;</button>
                         </div>
                         <p id="mapTooltip" class="btn btn-secondary" style="visibility: hidden;"></p>
@@ -3709,25 +3757,10 @@
 
 <rect class="city"
     data-town="Indigo Plateau Johto" 
-    x="1424"
-    y="48"
-    height="128"
-    width="176"
-    data-bind="
-        click:function(){MapHelper.moveToTown('Indigo Plateau Johto')},
-        attr: { class: MapHelper.calculateTownCssClass('Indigo Plateau Johto') },
-        ">
-</rect>
-
-    <!--Indigo Plateau 2.0 Extension-->
-    
-
-<rect class="city"
-    data-town="Indigo Plateau Johto" 
-    x="1472"
-    y="176"
-    height="48"
-    width="80"
+    x="1440"
+    y="64"
+    height="88"
+    width="144"
     data-bind="
         click:function(){MapHelper.moveToTown('Indigo Plateau Johto')},
         attr: { class: MapHelper.calculateTownCssClass('Indigo Plateau Johto') },
@@ -3740,8 +3773,8 @@
 <rect class="city"
     data-town="Indigo Plateau Johto" 
     x="1488"
-    y="224"
-    height="80"
+    y="152"
+    height="152"
     width="48"
     data-bind="
         click:function(){MapHelper.moveToTown('Indigo Plateau Johto')},
@@ -4894,7 +4927,7 @@
     data-bind="click:function(){ MapHelper.moveToRoute(127, 2); } ">
     <rect data-route='127'
         data-bind="attr: { class: MapHelper.calculateRouteCssClass(127, 2) }"
-        height="32"
+        height="48"
         width="48"
         x="1440" y="384">
     </rect>
@@ -4927,6 +4960,21 @@
         height="16"
         width="16"
         x="1472" y="544">
+    </rect>
+
+</g>
+
+     <!--Route 127 Extension-->
+     
+
+<g
+
+    data-bind="click:function(){ MapHelper.moveToRoute(127, 2); } ">
+    <rect data-route='127'
+        data-bind="attr: { class: MapHelper.calculateRouteCssClass(127, 2) }"
+        height="32"
+        width="16"
+        x="1440" y="432">
     </rect>
 
 </g>
@@ -5354,10 +5402,25 @@
 
 <rect class="city"
     data-town="Pokémon League Hoenn" 
-    x="1440"
-    y="416"
-    height="128"
-    width="160"
+    x="1456"
+    y="432"
+    height="88"
+    width="144"
+    data-bind="
+        click:function(){MapHelper.moveToTown('Pokémon League Hoenn')},
+        attr: { class: MapHelper.calculateTownCssClass('Pokémon League Hoenn') },
+        ">
+</rect>
+
+    <!--Pokémon League Hoenn Extension-->
+    
+
+<rect class="city"
+    data-town="Pokémon League Hoenn" 
+    x="1504"
+    y="520"
+    height="8"
+    width="48"
     data-bind="
         click:function(){MapHelper.moveToTown('Pokémon League Hoenn')},
         attr: { class: MapHelper.calculateTownCssClass('Pokémon League Hoenn') },
@@ -6442,14 +6505,14 @@
 
 <g
 
-    transform="rotate(90 ,1448, 416)"
+    transform="rotate(90 ,1440, 416)"
 
     data-bind="click:function(){ MapHelper.moveToRoute(224, 3); } ">
     <rect data-route='224'
         data-bind="attr: { class: MapHelper.calculateRouteCssClass(224, 3) }"
-        height="8"
+        height="16"
         width="48"
-        x="1448" y="408">
+        x="1440" y="400">
     </rect>
 
 </g>
@@ -7034,10 +7097,25 @@
 
 <rect class="city"
     data-town="Pokémon League Sinnoh" 
-    x="1288"
-    y="387.2"
-    height="108.8"
-    width="160"
+    x="1296"
+    y="400"
+    height="88"
+    width="144"
+    data-bind="
+        click:function(){MapHelper.moveToTown('Pokémon League Sinnoh')},
+        attr: { class: MapHelper.calculateTownCssClass('Pokémon League Sinnoh') },
+        ">
+</rect>
+
+    <!--Pokémon League Sinnoh Extension-->
+    
+
+<rect class="city"
+    data-town="Pokémon League Sinnoh" 
+    x="1344"
+    y="488"
+    height="8"
+    width="48"
     data-bind="
         click:function(){MapHelper.moveToTown('Pokémon League Sinnoh')},
         attr: { class: MapHelper.calculateTownCssClass('Pokémon League Sinnoh') },
@@ -8084,8 +8162,8 @@
     <rect data-route='23'
         data-bind="attr: { class: MapHelper.calculateRouteCssClass(23, 4) }"
         height="48"
-        width="8"
-        x="1048" y="32">
+        width="16"
+        x="1040" y="32">
     </rect>
 
 </g>
@@ -8515,10 +8593,25 @@
 
 <rect class="city"
     data-town="Pokémon League Unova" 
-    x="888"
-    y="4"
-    height="108"
-    width="160"
+    x="896"
+    y="0"
+    height="88"
+    width="144"
+    data-bind="
+        click:function(){MapHelper.moveToTown('Pokémon League Unova')},
+        attr: { class: MapHelper.calculateTownCssClass('Pokémon League Unova') },
+        ">
+</rect>
+
+    <!--Pokémon League Unova Extension-->
+    
+
+<rect class="city"
+    data-town="Pokémon League Unova" 
+    x="944"
+    y="88"
+    height="8"
+    width="48"
     data-bind="
         click:function(){MapHelper.moveToTown('Pokémon League Unova')},
         attr: { class: MapHelper.calculateTownCssClass('Pokémon League Unova') },
@@ -10018,15 +10111,30 @@
         ">
 </rect>
 
-    <!--Pokémon League-->
+    <!--Pokémon League Kalos-->
     
 
 <rect class="city"
     data-town="Pokémon League Kalos" 
-    x="968"
-    y="352"
-    height="120"
-    width="160"
+    x="976"
+    y="368"
+    height="88"
+    width="144"
+    data-bind="
+        click:function(){MapHelper.moveToTown('Pokémon League Kalos')},
+        attr: { class: MapHelper.calculateTownCssClass('Pokémon League Kalos') },
+        ">
+</rect>
+
+    <!--Pokémon League Kalos Extension-->
+    
+
+<rect class="city"
+    data-town="Pokémon League Kalos" 
+    x="1024"
+    y="456"
+    height="8"
+    width="48"
     data-bind="
         click:function(){MapHelper.moveToTown('Pokémon League Kalos')},
         attr: { class: MapHelper.calculateTownCssClass('Pokémon League Kalos') },
@@ -15445,10 +15553,25 @@
 
 <rect class="city"
     data-town="Pokémon League Alola" 
-    x="968"
-    y="512"
-    height="120"
-    width="160"
+    x="976"
+    y="528"
+    height="88"
+    width="144"
+    data-bind="
+        click:function(){MapHelper.moveToTown('Pokémon League Alola')},
+        attr: { class: MapHelper.calculateTownCssClass('Pokémon League Alola') },
+        ">
+</rect>
+
+        <!--Pokémon League Alola Extension-->
+        
+
+<rect class="city"
+    data-town="Pokémon League Alola" 
+    x="1024"
+    y="616"
+    height="24"
+    width="48"
     data-bind="
         click:function(){MapHelper.moveToTown('Pokémon League Alola')},
         attr: { class: MapHelper.calculateTownCssClass('Pokémon League Alola') },
@@ -17173,6 +17296,32 @@ aria-labelledby="receiveBadgeModalLabel" aria-hidden="true">
 </div>
 
 
+<!-- One time battle won Modal -->
+<div class="modal fade" data-keyboard="false" data-backdrop="static" id="temporaryBattleWonModal" tabindex="-1" role="dialog"
+aria-labelledby="temporaryBattleWonModalLabel" aria-hidden="true" data-bind="if: TemporaryBattleRunner.battleObservable()">
+<div class="modal-dialog modal-dialog-scrollable" role="document">
+   <div class="modal-content">
+       <div class="modal-header">
+           <div style="width: 100%;">
+               <img src="" onerror="this.src='assets/images/trainers/Mysterious Trainer.png'"
+                    data-bind="attr:{ src: 'assets/images/temporaryBattle/' + TemporaryBattleRunner.battleObservable()?.name + '.png'}">
+               <h5 class="modal-title" id="temporaryBattleWonModalLabel"
+                   data-bind="text: TemporaryBattleRunner.battleObservable()?.displayName">Modal title</h5>
+
+           </div>
+        </div>
+        <div class="modal-body">
+           <p data-bind="text: TemporaryBattleRunner.battleObservable()?.defeatMessage"></p>
+
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+        </div>
+   </div>
+</div>
+</div>
+
+
 <!-- Achievements Modal -->
 <div class="modal  fade" id="achievementsModal" tabindex="-1" role="dialog"
 aria-labelledby="AchievementsModalLabel" aria-hidden="true">
@@ -18511,7 +18660,11 @@ aria-labelledby="breedingModalLabel" aria-hidden="true">
                                         <option data-bind="text: $data.text, value: $data.value"></option>
                                     </select>
                                     <div class="input-group-append bg-primary text-light">
-                                        <label for="hatcherySortDirection" class="clickable m-0 pl-2 pr-2" style="font-size: 22px;" data-bind="text: Settings.getSetting('hatcherySortDirection').observableValue() ? '⥄' : '⥂'">⥂</label>
+                                        <label for="hatcherySortDirection" class="clickable m-0 pl-2 pr-2" style="font-size: 22px;" data-bind="
+                                        text: Settings.getSetting('hatcherySortDirection').observableValue() ? '⥄' : '⥂',
+                                        tooltip: { title: Settings.getSetting('hatcherySortDirection').observableValue() ? 'Descending (highest value first)' : 'Ascending (lowest value first)', trigger: 'hover', placement:'top', html: true }
+
+                                        ">⥂</label>
                                         <input id="hatcherySortDirection" style="vertical-align: middle" class="hidden" type='checkbox'
                                             data-bind="checked: Settings.getSetting('hatcherySortDirection').observableValue()"
                                             onchange="Settings.setSettingByName('hatcherySortDirection', this.checked)"/>
@@ -18601,7 +18754,7 @@ aria-labelledby="breedingModalLabel" aria-hidden="true">
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td class="text-left align-middle">Cost:</td>
+                                            <td class="text-left align-middle">Cost / Hatch:</td>
                                             <td class="text-right" data-bind="template: { name: 'currencyTemplate', data: {'amount': $data.cost.amount, 'currency': $data.cost.currency, 'reducedThreshold': 1e10}}"></td>
                                         </tr>
                                         <tr>
@@ -18663,12 +18816,16 @@ aria-labelledby="breedingModalLabel" aria-hidden="true">
                                                 <div class="input-group input-group-sm">
                                                     <select autocomplete="off" class="custom-select" data-bind="options: GameHelper.enumSelectOption(SortOptions), optionsValue: 'value', optionsText: i => GameConstants.camelCaseToString(i.name), value: $data.sortOption"></select>
                                                     <div class="input-group-append bg-primary text-light">
-                                                        <label class="clickable m-0 px-2" style="font-size: 20px;" data-bind="attr: { for: 'hatcheryHelperSortDirection' + $index() }, text: $data.sortDirection() ? '⥄' : '⥂'">⥂</label>
+                                                        <label class="clickable m-0 px-2" style="font-size: 20px;" data-bind="
+                                                            attr: {for: 'hatcheryHelperSortDirection' + $index() },
+                                                            text: $data.sortDirection() ? '⥄' : '⥂',
+                                                            tooltip: { title: $data.sortDirection() ? 'Descending (highest value first)' : 'Ascending (lowest value first)', trigger: 'hover', placement:'top', html: true }
+                                                            ">⥂</label>
                                                         <input class="hidden" type="checkbox"
                                                             data-bind="attr: { id: 'hatcheryHelperSortDirection' + $index() }, checked:  $data.sortDirection" />
                                                     </div>
                                                 </div>
-                                                
+
                                             </td>
                                         </tr>
                                     </tbody>
@@ -19342,7 +19499,10 @@ aria-labelledby="pokedexModalLabel">
                           <option data-bind="text: $data.text, value: $data.value"></option>
                       </select>
                       <div class="input-group-append bg-primary text-light">
-                          <label for="proteinSortDirection" class="clickable m-0 pl-2 pr-2" style="font-size: 22px;" data-bind="text: Settings.getSetting('proteinSortDirection').observableValue() ? '⥄' : '⥂'">⥂</label>
+                          <label for="proteinSortDirection" class="clickable m-0 pl-2 pr-2" style="font-size: 22px;" data-bind="
+                            text: Settings.getSetting('proteinSortDirection').observableValue() ? '⥄' : '⥂',
+                            tooltip: { title: Settings.getSetting('proteinSortDirection').observableValue() ? 'Descending (highest value first)' : 'Ascending (lowest value first)', trigger: 'hover', placement:'top', html: true }
+                            ">⥂</label>
                           <input id="proteinSortDirection" style="vertical-align: middle" class="hidden" type='checkbox'
                               data-bind="checked: Settings.getSetting('proteinSortDirection').observableValue()"
                               onchange="Settings.setSettingByName('proteinSortDirection', this.checked)"/>
